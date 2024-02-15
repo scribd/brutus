@@ -6,6 +6,7 @@ homepage = "https://github.com/scribd/brutus"
 
 [dependencies]
 async-std = { version = "1.12.0", features = ["attributes", "tokio1"] }
+hora = "0.1.1"
 object_store = { version = "0.9.0", features = ["aws"] }
 parquet = { version = "50.0.0", features = ["object_store", "serde", "serde_json", "json", "async"] }
 tide = "0.16.0"
