@@ -6,30 +6,24 @@ info:
   version: 1.0.11
 
 paths:
-  /doc/relSearch:
+  /doc/relSearch/{docId}:
     post:
       tags:
         - doc
       summary: Search by relevance within a Doc
-      operationId: relevanceSearch
       parameters:
-        - name: DocId
-          in: query
-          description: DocId
-          required: false
-          explode: true
+        - name: docId
+          in: path
+          description: ID of Doc to search
+          required: true
           schema:
-            type: string
-            default: 123
-        - name: searchTerm
-          in: query
-          description: searchTerm
-          required: false
-          explode: true
-          schema:
-            type: string
-            default: 123
-      
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/relevanceSearch'
       responses:
         '200':
           description: successful operation
@@ -142,10 +136,19 @@ paths:
           description: Invalid status value
           
           
-  
-  
 components:
   schemas:
+
+
+
+        - name: searchTerm
+          in: query
+          description: searchTerm
+          required: false
+          explode: true
+          schema:
+            type: string
+            default: 123
     Result:
       type: object
       properties:
