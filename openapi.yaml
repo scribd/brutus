@@ -23,7 +23,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/relevanceSearch'
+              $ref: '#/components/schemas/RelevanceSearchRequestBody'
       responses:
         '200':
           description: successful operation
@@ -41,12 +41,26 @@ paths:
         '400':
           description: Invalid status value
           
-  /doc/vecSearch:
+  /doc/vecSearch/{docId}:
     post:
       tags:
         - doc
       summary: Nearest neighbour vector search across parapgrapgs within a Doc
       operationId: vectorSearch
+    parameters:
+        - name: docId
+          in: path
+          description: ID of Doc to search
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VectorSearchRequestBody'
+
       parameters:
         - name: DocId
           in: query
@@ -92,32 +106,19 @@ paths:
       summary: Search by relevance and vector within a Doc
       operationId: hybridSearch
       parameters:
-        - name: DocId
-          in: query
-          description: DocId
-          required: false
-          explode: true
+        - name: docId
+          in: path
+          description: ID of Doc to search
+          required: true
           schema:
-            type: string
-            default: 123
-        - name: seedVec
-          in: query
-          description: seedVec
-          required: false
-          explode: true
-          schema:
-            type:  array
-            items: 
-              type: number
-              format: float
-        - name: searchTerm
-          in: query
-          description: searchTerm
-          required: false
-          explode: true
-          schema:
-            type: string
-            default: 123
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HybridSearchRequestBody'
+
       responses:
         '200':
           description: successful operation
@@ -138,45 +139,37 @@ paths:
           
 components:
   schemas:
-
-
-
-        - name: searchTerm
-          in: query
-          description: searchTerm
-          required: false
-          explode: true
-          schema:
-            type: string
-            default: 123
+    HybridSearchRequestBody:
+      type: object
+      properties:
+       searchTerm:
+         type: string
+       seedVector:
+          type:  array
+            items: 
+              type: number
+              format: float
+    RelevanceSearchRequestBody:
+      type: object
+      properties:
+       searchTerm:
+         type: string
+    VectorSearchRequestBody:
+      type: object
+      properties:
+       seedVector:
+          type:  array
+            items: 
+              type: number
+              format: float
     Result:
       type: object
       properties:
         doc_id:
           type: integer
           format: int64
-          example: 10
-        petId:
-          type: integer
-          format: int64
-          example: 198772
-        quantity:
-          type: integer
-          format: int32
-          example: 7
-        shipDate:
-          type: string
-          format: date-time
-        status:
-          type: string
-          description: Order Status
-          example: approved
-          enum:
-            - placed
-            - approved
-            - delivered
-        complete:
-          type: boolean
-      xml:
-        name: order
-    
+        score:
+          type: number
+          format: float
+        text:
+          type: string 
