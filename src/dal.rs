@@ -3,9 +3,12 @@
 ///
 /// This module is responsible for all the interactions with S3
 ///
+use arrow::array::cast::*;
+use arrow::array::*;
+use arrow::datatypes::*;
 use async_std::stream::StreamExt;
 use object_store::{path::Path, ObjectStore};
-
+use parquet::arrow::async_reader::*;
 use serde::{Deserialize, Serialize};
 
 use std::sync::Arc;
@@ -18,19 +21,17 @@ pub struct Document {
 
 #[derive(Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct Chunk {
-    id: u64,
-    sequence: Option<u64>,
-    page: u64,
+    id: i64,
+    sequence: Option<i32>,
+    page: i32,
     text: String,
-    embedding: Vec<f64>,
+    embedding: Vec<f32>,
 }
 
 async fn doc_from_storage(
     prefix: impl AsRef<str>,
     store: Arc<dyn ObjectStore>,
 ) -> Result<Document, anyhow::Error> {
-    use parquet::arrow::async_reader::*;
-    use parquet::schema::printer::print_parquet_metadata;
     let location = Path::from(prefix.as_ref());
 
     let meta = store.head(&location).await.unwrap();
@@ -38,15 +39,57 @@ async fn doc_from_storage(
     // Show Parquet metadata
     let reader = ParquetObjectReader::new(store, meta);
     let builder = ParquetRecordBatchStreamBuilder::new(reader).await.unwrap();
-    print_parquet_metadata(&mut std::io::stdout(), builder.metadata());
 
     let mut stream = builder.build()?;
+    let mut document = Document::default();
 
-    while let Some(batch) = stream.next().await {
-        println!("BATCH: {batch:?}");
+    while let Some(Ok(batch)) = stream.next().await {
+        let ids: &PrimitiveArray<Int64Type> = as_primitive_array(
+            batch
+                .column_by_name("chunk_id")
+                .expect("Failed to get chunk_id from parquet file")
+                .as_ref(),
+        );
+        let texts = as_string_array(
+            batch
+                .column_by_name("chunk_text")
+                .expect("Failed to get `chunk_text` from parquet file")
+                .as_ref(),
+        );
+        let pages: &PrimitiveArray<Int32Type> = as_primitive_array(
+            batch
+                .column_by_name("page")
+                .expect("Failed to get `page` from parquet file")
+                .as_ref(),
+        );
+        let sequences: &PrimitiveArray<Int32Type> = as_primitive_array(
+            batch
+                .column_by_name("chunk_sequence")
+                .expect("Failed to get `chunk_sequence` from parquet file")
+                .as_ref(),
+        );
+        let embeddings = as_list_array(
+            batch
+                .column_by_name("chunk_embedding")
+                .expect("Failed to get `chunk_embedding` from parquet file")
+                .as_ref(),
+        );
+
+        for row in 0..batch.num_rows() {
+            let embeddings = embeddings.value(row);
+            let ems: &PrimitiveArray<Float32Type> = as_primitive_array(embeddings.as_ref());
+            let chunk = Chunk {
+                id: ids.value(row),
+                page: pages.value(row),
+                text: texts.value(row).into(),
+                sequence: Some(sequences.value(row)),
+                embedding: ems.iter().map(|v| v.unwrap()).collect(),
+            };
+            document.chunks.push(chunk);
+        }
     }
 
-    Ok(Document::default())
+    Ok(document)
 }
 
 #[cfg(test)]
@@ -65,6 +108,10 @@ mod tests {
             .expect("Failed to load document from storage");
 
         assert_ne!(doc.chunks.len(), 0);
+        assert_eq!(doc.chunks.len(), 5);
+        let chunk = doc.chunks.first().expect("We should have a first element");
+        assert_eq!(chunk.id, -896282756710128915);
+        assert_eq!(chunk.embedding[0], 0.026046248);
         Ok(())
     }
 }
