@@ -1,0 +1,36 @@
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+:toc: macro
+
+= Brutus
+
+An API for performing brute force vector search backed by pre-computed data in
+S3.
+
+
+toc::[]
+
+
+== Development
+
+This project uses Rust, so builds and tests can be done with:
+
+* `cargo build`
+* `cargo test`
+* _etc_
+
+
+=== Data file schema
+
+chunk_id:long
+chunk_text:string
+chunk_embedding:array
+element:float
+page:integer
+doc_id:long
+chunk_sequence:integer
