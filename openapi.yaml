@@ -47,7 +47,7 @@ paths:
         - doc
       summary: Nearest neighbour vector search across parapgrapgs within a Doc
       operationId: vectorSearch
-    parameters:
+      parameters:
         - name: docId
           in: path
           description: ID of Doc to search
@@ -60,27 +60,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/VectorSearchRequestBody'
-
-      parameters:
-        - name: DocId
-          in: query
-          description: DocId
-          required: false
-          explode: true
-          schema:
-            type: string
-            default: 123
-        - name: seedVec
-          in: query
-          description: seedVec
-          required: false
-          explode: true
-          schema:
-            type:  array
-            items: 
-              type: number
-              format: float
-    
       responses:
         '200':
           description: successful operation
@@ -99,7 +78,7 @@ paths:
           description: Invalid status value
           
           
-  /doc/hybridSearch:
+  /doc/hybridSearch/{docId}:
     post:
       tags:
         - doc
@@ -146,9 +125,9 @@ components:
          type: string
        seedVector:
           type:  array
-            items: 
-              type: number
-              format: float
+          items: 
+            type: number
+            format: float
     RelevanceSearchRequestBody:
       type: object
       properties:
@@ -159,9 +138,9 @@ components:
       properties:
        seedVector:
           type:  array
-            items: 
-              type: number
-              format: float
+          items: 
+            type: number
+            format: float
     Result:
       type: object
       properties:
