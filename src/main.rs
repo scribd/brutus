@@ -5,8 +5,6 @@ mod api;
 mod dal;
 
 //use core::slice::SlicePattern;
-#[macro_use]
-
 #[async_std::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt()
