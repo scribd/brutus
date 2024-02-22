@@ -1,7 +1,8 @@
+use crate::dal::*;
 use crate::search::{
-    text_search,
-    text_search::{TantivyTextSearch, TextChunk, TextSearch, TextSearchResult},
-    vector_search::{HoraVectorSearch, VectorChunk, VectorSearch, VectorSearchResult},
+    text_search::{TantivyTextSearch, TextChunk},
+    vector_search::{HoraVectorSearch, VectorChunk},
+    Search, SearchResult,
 };
 
 use rand::Rng;
@@ -16,8 +17,8 @@ use tracing::log::*;
 /// Main handler for all the API routes
 ///
 /// returns the API server which can be nsted under the main application
-pub fn routes() -> Result<Server<()>> {
-    let mut app = tide::new();
+pub fn routes() -> Result<Server<State>> {
+    let mut app = tide::with_state(State::from_env()?);
 
     app.at("/vecSearch").post(vector_search);
     app.at("/relSearch").post(relevance_search);
@@ -49,16 +50,16 @@ pub struct HybridSearchRequest {
 ///
 /// POST /relSearch
 ///
-pub async fn hybrid_search(mut req: Request<()>) -> Result<Body> {
+pub async fn hybrid_search(mut req: Request<State>) -> Result<Body> {
     let _request: HybridSearchRequest = req.body_json().await?;
-    let response: Vec<VectorSearchResult> = Vec::with_capacity(100);
+    let response: Vec<SearchResult> = Vec::with_capacity(100);
     Body::from_json(&response)
 }
 
 ///
 /// POST /relSearch
 ///
-pub async fn relevance_search(mut req: Request<()>) -> Result<Body> {
+pub async fn relevance_search(mut req: Request<State>) -> Result<Body> {
     let _request: RelevanceSearchRequest = req.body_json().await?;
 
     let mut text_search = TantivyTextSearch::new();
@@ -96,8 +97,8 @@ pub async fn relevance_search(mut req: Request<()>) -> Result<Body> {
 ///
 /// POST /vecSearch
 ///
-pub async fn vector_search(mut req: Request<()>) -> Result<Body> {
-    let _request: VectorSearchRequest = req.body_json().await?;
+pub async fn vector_search(mut req: Request<State>) -> Result<Body> {
+    let request: VectorSearchRequest = req.body_json().await?;
 
     const DIMENSION: usize = 1024;
     let mut vector_search = HoraVectorSearch::new(DIMENSION);
@@ -114,9 +115,9 @@ pub async fn vector_search(mut req: Request<()>) -> Result<Body> {
             id: rnd.gen(),
             vectors: sample,
         };
-        vector_search.add(chunk)?;
+        vector_search.add(&chunk)?;
     }
 
-    let response = vector_search.search(&_request.query, n)?;
+    let response = vector_search.search(request.query, n)?;
     Body::from_json(&response)
 }

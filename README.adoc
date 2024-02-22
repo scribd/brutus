@@ -25,6 +25,13 @@ This project uses Rust, so builds and tests can be done with:
 * _etc_
 
 
+=== Testing against localstack
+
+[source,bash]
+----
+AWS_ACCESS_KEY_ID=deltalake AWS_SECRET_ACCESS_KEY=weloverust AWS_ENDPOINT=http://localhost:4566 AWS_ALLOW_HTTP=true BRUTUS_DOCUMENTS_URL=s3://data cargo test
+----
+
 === Data file schema
 
 chunk_id:long

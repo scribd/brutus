@@ -1,34 +1,16 @@
 //use core::slice::SlicePattern;
 use tantivy::collector::TopDocs;
-use tantivy::doc;
 use tantivy::query::QueryParser;
 use tantivy::schema::*;
-use tantivy::Index;
-use tantivy::ReloadPolicy;
-use tantivy::TantivyError;
+use tantivy::{doc, Index, ReloadPolicy, TantivyError};
 use tempfile::TempDir;
 
-use serde::{Deserialize, Serialize};
+use super::*;
 
 #[derive(Clone)]
 pub struct TextChunk {
     pub id: u64,
     pub text: String,
-}
-
-#[derive(Debug, Default, Deserialize, Serialize, PartialEq)]
-pub struct TextSearchResult {
-    // VectorChunk iod
-    chunk: u64,
-    // score
-    score: f64,
-    text: String,
-}
-
-pub trait TextSearch<E> {
-    fn commit(&mut self) -> Result<(), E>;
-    fn add(&mut self, chunk: &TextChunk) -> Result<(), E>;
-    fn search(&mut self, query: String, k: usize) -> Result<Vec<TextSearchResult>, E>;
 }
 
 //would be nice to understand how to do this in a more elegant way lots of members being passed around here lots of state which i dont like
@@ -64,12 +46,16 @@ impl TantivyTextSearch {
     }
 }
 
-impl TextSearch<TantivyError> for TantivyTextSearch {
-    fn commit(&mut self) -> Result<(), TantivyError> {
-        self.index_writer.commit().map(|op| ())
+impl Search for TantivyTextSearch {
+    type Chunk = TextChunk;
+    type QueryType = String;
+    type ErrorType = TantivyError;
+
+    fn commit(&mut self) -> Result<(), Self::ErrorType> {
+        self.index_writer.commit().map(|_op| ())
     }
 
-    fn add(&mut self, chunk: &TextChunk) -> Result<(), TantivyError> {
+    fn add(&mut self, chunk: &Self::Chunk) -> Result<(), Self::ErrorType> {
         //todo the clone here smells dirty ...
         self.index_writer
             .add_document(doc!(
@@ -78,7 +64,7 @@ impl TextSearch<TantivyError> for TantivyTextSearch {
             .map(|_| ())
     }
 
-    fn search(&mut self, query: String, k: usize) -> Result<Vec<TextSearchResult>, TantivyError> {
+    fn search(&mut self, query: String, k: usize) -> Result<Vec<SearchResult>, Self::ErrorType> {
         let reader = self
             .index
             .reader_builder()
@@ -98,15 +84,17 @@ impl TextSearch<TantivyError> for TantivyTextSearch {
         for (score, doc_address) in top_docs {
             let retrieved_doc = searcher.doc(doc_address)?;
             println!("{}", self.schema.to_json(&retrieved_doc));
-            result.push(TextSearchResult {
+            result.push(SearchResult {
                 chunk: retrieved_doc.get_first(self.id).unwrap().as_u64().unwrap(),
                 score: score as f64,
-                text: retrieved_doc
-                    .get_first(self.text)
-                    .unwrap()
-                    .as_text()
-                    .unwrap()
-                    .to_string(),
+                data: SearchResultData::String(
+                    retrieved_doc
+                        .get_first(self.text)
+                        .unwrap()
+                        .as_text()
+                        .unwrap()
+                        .to_string(),
+                ),
             });
         }
 
@@ -116,10 +104,9 @@ impl TextSearch<TantivyError> for TantivyTextSearch {
 
 #[cfg(test)]
 mod tests {
-    use super::{TantivyTextSearch, TextChunk, TextSearch};
+    use super::*;
 
     #[test]
-
     fn test_text_search() {
         let mut text_search = TantivyTextSearch::new();
 

@@ -1,30 +1,11 @@
-use hora::core::{ann_index::ANNIndex, node::Node};
-use serde::{Deserialize, Serialize};
+use super::{Search, SearchResult, SearchResultData};
+use hora::core::ann_index::ANNIndex;
 use thiserror::Error;
-
-//an index stores vector chunks
 
 #[derive(Clone)]
 pub struct VectorChunk {
     pub id: u64,
     pub vectors: Vec<f64>,
-}
-
-#[derive(Debug, Default, Deserialize, Serialize, PartialEq)]
-pub struct VectorSearchResult {
-    // VectorChunk iod
-    chunk: u64,
-    // score
-    score: f64,
-}
-
-pub trait VectorSearch<E> {
-    // build the Vector Search index. This is done when all records are added
-    fn build(&mut self) -> Result<(), E>;
-    // add a new Vector Chunk to the index
-    fn add(&mut self, chunk: VectorChunk) -> Result<(), E>;
-    // search the index relies on items being added and the index being built
-    fn search(&mut self, query: &Vec<f64>, k: usize) -> Result<Vec<VectorSearchResult>, E>;
 }
 
 #[derive(Debug, Clone, Error)]
@@ -48,9 +29,13 @@ impl HoraVectorSearch {
         }
     }
 }
+impl Search for HoraVectorSearch {
+    type Chunk = VectorChunk;
+    // TODO: I think this can turn into a slice
+    type QueryType = Vec<f64>;
+    type ErrorType = HoraError;
 
-impl VectorSearch<HoraError> for HoraVectorSearch {
-    fn add(&mut self, chunk: VectorChunk) -> Result<(), HoraError> {
+    fn add(&mut self, chunk: &Self::Chunk) -> Result<(), Self::ErrorType> {
         // Probably a more optimal way to do this
         //for sample in chunk.vectors {
         //  self.index.add(sample.as_slice(), chunk.id);
@@ -66,13 +51,18 @@ impl VectorSearch<HoraError> for HoraVectorSearch {
             .map_err(|err| HoraError::Error(err.to_string()))
     }
 
-    fn search(&mut self, query: &Vec<f64>, k: usize) -> Result<Vec<VectorSearchResult>, HoraError> {
+    fn search(
+        &mut self,
+        query: Self::QueryType,
+        k: usize,
+    ) -> Result<Vec<SearchResult>, Self::ErrorType> {
         let nn = self.index.search_nodes(&query.as_slice(), k);
-        let response: Vec<VectorSearchResult> = nn
+        let response: Vec<SearchResult> = nn
             .iter()
-            .map(|n| VectorSearchResult {
+            .map(|n| SearchResult {
                 chunk: n.0.idx().unwrap(), // todo throw error instead of unwrap .ok_or_else(|| HoraError("idx not found"))?,
                 score: n.1,
+                data: SearchResultData::Empty,
             })
             .collect();
 
@@ -82,9 +72,7 @@ impl VectorSearch<HoraError> for HoraVectorSearch {
 
 #[cfg(test)]
 mod tests {
-    use crate::search::vector_search::VectorSearch;
-
-    use super::{HoraVectorSearch, VectorChunk};
+    use super::*;
     use rand::Rng;
 
     #[test]
@@ -103,7 +91,7 @@ mod tests {
                 id: rnd.gen(),
                 vectors: sample,
             };
-            hora_search.add(chunk).unwrap();
+            hora_search.add(&chunk).unwrap();
         }
 
         hora_search.build().unwrap();
@@ -113,7 +101,7 @@ mod tests {
             seed.push(rnd.gen());
         }
         let target: usize = rnd.gen_range(0..n);
-        let result = hora_search.search(&seed, n).unwrap();
+        let result = hora_search.search(seed, n).unwrap();
         assert!(!result.is_empty());
     }
 }

@@ -3,6 +3,7 @@ use tracing::log::*;
 
 mod api;
 mod dal;
+mod error;
 mod search;
 
 //use core::slice::SlicePattern;

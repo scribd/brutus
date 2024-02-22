@@ -5,7 +5,6 @@ edition = "2021"
 homepage = "https://github.com/scribd/brutus"
 
 [dependencies]
-anyhow = "1.0.79"
 arrow = "50.0.0"
 async-std = { version = "1.12.0", features = ["attributes", "tokio1"] }
 hora = "0.1.1"
@@ -19,3 +18,4 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter", "time", "ch
 tantivy = "0.21.1"
 tempfile = "3.10.0"
 thiserror = "1.0.30"
+url = "2.5.0"
