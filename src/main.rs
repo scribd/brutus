@@ -3,6 +3,7 @@ use tracing::log::*;
 
 mod api;
 mod dal;
+mod search;
 
 //use core::slice::SlicePattern;
 #[async_std::main]

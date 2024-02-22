@@ -18,3 +18,4 @@ tracing = { version = "0.1.40", features = ["log"] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "time", "chrono", "json"] }
 tantivy = "0.21.1"
 tempfile = "3.10.0"
+thiserror = "1.0.30"
