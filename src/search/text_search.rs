@@ -10,6 +10,7 @@ use tempfile::TempDir;
 
 use serde::{Deserialize, Serialize};
 
+#[derive(Clone)]
 pub struct TextChunk {
     pub id: u64,
     pub text: String,
@@ -32,6 +33,7 @@ pub trait TextSearch<E> {
 
 //would be nice to understand how to do this in a more elegant way lots of members being passed around here lots of state which i dont like
 pub struct TantivyTextSearch {
+    index_path: TempDir,
     index_writer: tantivy::IndexWriter,
     index: tantivy::Index,
     id: Field,
@@ -52,6 +54,7 @@ impl TantivyTextSearch {
         let index_writer = index.writer(50_000_000).unwrap();
 
         TantivyTextSearch {
+            index_path: index_path,
             index_writer: index_writer,
             index: index,
             id: schema.get_field("id").unwrap(),
@@ -144,7 +147,7 @@ mod tests {
             text_search.add(sample).unwrap();
         }
 
-        let query = "ab".to_string();
+        let query = "abc".to_string();
         text_search.commit().unwrap();
         let result = text_search.search(query, samples.len()).unwrap();
         println!("{:?} search result", result);

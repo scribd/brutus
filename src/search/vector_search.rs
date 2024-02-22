@@ -2,6 +2,9 @@ use hora::core::{ann_index::ANNIndex, node::Node};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+//an index stores vector chunks
+
+#[derive(Clone)]
 pub struct VectorChunk {
     pub id: u64,
     pub vectors: Vec<f64>,
@@ -16,8 +19,11 @@ pub struct VectorSearchResult {
 }
 
 pub trait VectorSearch<E> {
+    // build the Vector Search index. This is done when all records are added
     fn build(&mut self) -> Result<(), E>;
+    // add a new Vector Chunk to the index
     fn add(&mut self, chunk: VectorChunk) -> Result<(), E>;
+    // search the index relies on items being added and the index being built
     fn search(&mut self, query: &Vec<f64>, k: usize) -> Result<Vec<VectorSearchResult>, E>;
 }
 
@@ -34,7 +40,6 @@ pub struct HoraVectorSearch {
 
 impl HoraVectorSearch {
     pub fn new(dimension: usize) -> HoraVectorSearch {
-        //todo
         HoraVectorSearch {
             index: hora::index::bruteforce_idx::BruteForceIndex::<f64, u64>::new(
                 dimension,
@@ -88,8 +93,8 @@ mod tests {
         let n = 1000;
         let d = 1024;
         let mut hora_search = HoraVectorSearch::new(d);
-        let mut samples = Vec::with_capacity(n);
-        for _ in 0..n {
+        let mut seed: VectorChunk;
+        for i in 0..n {
             let mut sample: Vec<f64> = Vec::with_capacity(d);
             for _ in 0..d {
                 sample.push(rnd.gen());
@@ -99,11 +104,16 @@ mod tests {
                 vectors: sample,
             };
             hora_search.add(chunk).unwrap();
-            samples.push(&chunk);
+        }
+
+        hora_search.build().unwrap();
+
+        let mut seed: Vec<f64> = Vec::with_capacity(d);
+        for _ in 0..d {
+            seed.push(rnd.gen());
         }
         let target: usize = rnd.gen_range(0..n);
-        let seed = &samples[target].vectors;
-        let result = hora_search.search(seed, n).unwrap();
+        let result = hora_search.search(&seed, n).unwrap();
         assert!(!result.is_empty());
     }
 }
