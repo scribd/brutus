@@ -128,14 +128,24 @@ pub struct Chunk {
 mod tests {
     use super::*;
 
-    use object_store::local::LocalFileSystem;
+    #[cfg(feature = "integration")]
+    fn setup() {
+        use std::env;
 
+        env::set_var("AWS_ACCESS_KEY_ID", "deltalake");
+        env::set_var("AWS_SECRET_ACCESS_KEY", "weloverust");
+        env::set_var("AWS_ENDPOINT", "http://localhost:4566");
+        env::set_var("AWS_ALLOW_HTTP", "true");
+        env::set_var("BRUTUS_DOCUMENTS_URL", "s3://brutus-data");
+    }
+
+    #[cfg(feature = "integration")]
     #[async_std::test]
     async fn test_load_static_file() -> Result<(), crate::error::Error> {
-        let store = Arc::new(LocalFileSystem::new_with_prefix(std::env::current_dir()?)?);
+        setup();
         let state = State::from_env()?;
 
-        let path = "tests/data/doc_id_1106528470000.parquet";
+        let path = "doc_id_1106528470000.parquet";
         let doc = state
             .fetch_doc(&path)
             .await

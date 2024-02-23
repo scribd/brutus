@@ -19,3 +19,10 @@ tantivy = "0.21.1"
 tempfile = "3.10.0"
 thiserror = "1.0.30"
 url = "2.5.0"
+
+
+
+[features]
+default = []
+# The integration feature just exists as a gate to allow for conditional exclusion of the tests which rely on docker-compose
+integration = []

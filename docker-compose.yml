@@ -1,5 +1,22 @@
 version: "3.9"
 services:
+  bootstrap:
+    depends_on:
+      localstack:
+        restart: true
+        condition: service_healthy
+    links:
+      - localstack
+    image: amazon/aws-cli
+    volumes:
+      - ./:/build
+    environment:
+      - AWS_ACCESS_KEY_ID=deltalake
+      - AWS_SECRET_ACCESS_KEY=weloverust
+      - AWS_ENDPOINT_URL=http://localstack:4566
+    entrypoint: /bin/sh -c
+    command: /build/scripts/bootstrap-s3
+
   localstack:
     image: localstack/localstack:0.14
     ports:
@@ -7,11 +24,7 @@ services:
       - 8080:8080
     environment:
       - SERVICES=s3
-      - DEBUG=1
-      - DATA_DIR=/tmp/localstack/data
       - PORT_WEB_UI=8080
-      - DOCKER_HOST=unix:///var/run/docker.sock
-      - HOST_TMP_FOLDER=${TMPDIR}
       - AWS_ACCESS_KEY_ID=deltalake
       - AWS_SECRET_ACCESS_KEY=weloverust
     healthcheck:
