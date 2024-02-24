@@ -34,9 +34,7 @@ impl TantivyTextIndex {
         .set_stored();
 
         let id_options = NumericOptions::default()
-            .set_indexed()
-            .set_fast()
-            .set_stored();
+        .set_stored();
 
         schema_builder.add_text_field("text", text_options);
         schema_builder.add_i64_field("id", id_options); 
