@@ -38,8 +38,8 @@ impl TantivyTextIndex {
             .set_fast()
             .set_stored();
 
-        schema_builder.add_text_field("text", text_options);//TEXT | STORED);
-        schema_builder.add_i64_field("id", id_options); //STORED);
+        schema_builder.add_text_field("text", text_options);
+        schema_builder.add_i64_field("id", id_options); 
 
         let schema = schema_builder.build();
         let index = tantivy::Index::create_in_dir(&index_path, schema.clone()).unwrap();
