@@ -1,8 +1,6 @@
 use crate::dal::*;
 use crate::search::{
-    text_search::{TantivyTextSearch, TextChunk},
-    vector_search::{HoraVectorSearch, VectorChunk},
-    Search, SearchResult,
+    text_search::TantivyTextSearch, vector_search::HoraVectorSearch, Search, SearchResult,
 };
 
 use rand::Rng;
@@ -71,10 +69,7 @@ pub async fn relevance_search(mut req: Request<State>) -> Result<Body> {
         .iter()
         .map(|chunk| {
             // TODO: The clone is unnecessary here and we should really be using a uniform chunk object
-            text_search.add(&TextChunk {
-                id: chunk.id,
-                text: chunk.text.clone(),
-            })
+            text_search.add(&chunk)
         })
         .collect();
     text_search.commit()?;
@@ -100,9 +95,10 @@ pub async fn vector_search(mut req: Request<State>) -> Result<Body> {
         for _j in 0..DIMENSION {
             sample.push(rnd.gen());
         }
-        let chunk = VectorChunk {
+        let chunk = Chunk {
             id: rnd.gen(),
-            vectors: sample,
+            embedding: sample,
+            ..Default::default()
         };
         vector_search.add(&chunk)?;
     }

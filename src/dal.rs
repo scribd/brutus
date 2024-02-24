@@ -11,7 +11,6 @@ use object_store::{aws::AmazonS3Builder, local::LocalFileSystem, path::Path, Obj
 use parquet::arrow::async_reader::*;
 use serde::{Deserialize, Serialize};
 use tracing::log::*;
-use url::Url;
 
 use std::sync::Arc;
 
@@ -99,7 +98,7 @@ impl State {
                     page: pages.value(row),
                     text: texts.value(row).into(),
                     sequence: Some(sequences.value(row)),
-                    embedding: ems.iter().map(|v| v.unwrap()).collect(),
+                    embedding: ems.iter().map(|v| (v.unwrap() as f64)).collect(),
                 };
                 document.chunks.push(chunk);
             }
@@ -111,17 +110,17 @@ impl State {
 
 #[derive(Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct Document {
-    id: u64,
+    pub id: u64,
     pub chunks: Vec<Chunk>,
 }
 
 #[derive(Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct Chunk {
     pub id: i64,
-    sequence: Option<i32>,
-    page: i32,
+    pub sequence: Option<i32>,
+    pub page: i32,
     pub text: String,
-    embedding: Vec<f32>,
+    pub embedding: Vec<f64>,
 }
 
 #[cfg(test)]
@@ -155,7 +154,7 @@ mod tests {
         assert_eq!(doc.chunks.len(), 5);
         let chunk = doc.chunks.first().expect("We should have a first element");
         assert_eq!(chunk.id, -896282756710128915);
-        assert_eq!(chunk.embedding[0], 0.026046248);
+        assert_eq!(chunk.embedding[0], 0.02604624815285206);
         Ok(())
     }
 }

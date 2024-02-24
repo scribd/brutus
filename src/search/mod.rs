@@ -1,6 +1,8 @@
 pub mod text_search;
 pub mod vector_search;
 
+use crate::dal::Chunk;
+
 use serde::{Deserialize, Serialize};
 
 /// Enum for determining what type of data, if any is carried along with a [SearchResult]
@@ -17,7 +19,7 @@ pub enum SearchResultData {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct SearchResult {
     /// The chunk's ID
-    chunk: u64,
+    chunk: i64,
     /// Result's search score
     score: f64,
     /// Optional data to return with the [SearchResult]
@@ -26,7 +28,6 @@ pub struct SearchResult {
 
 /// All search implementations should implement this interface
 pub trait Search {
-    type Chunk;
     type QueryType;
     type ErrorType;
 
@@ -34,7 +35,7 @@ pub trait Search {
     fn commit(&mut self) -> Result<(), Self::ErrorType> {
         Ok(())
     }
-    fn add(&mut self, chunk: &Self::Chunk) -> Result<(), Self::ErrorType>;
+    fn add(&mut self, chunk: &Chunk) -> Result<(), Self::ErrorType>;
 
     /// Default implementation is a no-op since not all [Search] implementations require it
     fn build(&mut self) -> Result<(), Self::ErrorType> {

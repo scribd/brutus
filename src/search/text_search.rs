@@ -7,12 +7,6 @@ use tempfile::TempDir;
 
 use super::*;
 
-#[derive(Clone)]
-pub struct TextChunk {
-    pub id: i64,
-    pub text: String,
-}
-
 //would be nice to understand how to do this in a more elegant way lots of members being passed around here lots of state which i dont like
 pub struct TantivyTextSearch {
     index_path: TempDir,
@@ -47,7 +41,6 @@ impl TantivyTextSearch {
 }
 
 impl Search for TantivyTextSearch {
-    type Chunk = TextChunk;
     type QueryType = String;
     type ErrorType = TantivyError;
 
@@ -55,7 +48,7 @@ impl Search for TantivyTextSearch {
         self.index_writer.commit().map(|_op| ())
     }
 
-    fn add(&mut self, chunk: &Self::Chunk) -> Result<(), Self::ErrorType> {
+    fn add(&mut self, chunk: &Chunk) -> Result<(), Self::ErrorType> {
         //todo the clone here smells dirty ...
         self.index_writer
             .add_document(doc!(
@@ -86,8 +79,13 @@ impl Search for TantivyTextSearch {
             println!("{}", self.schema.to_json(&retrieved_doc));
             println!("wtf is this: {:?}", retrieved_doc.get_first(self.id));
             result.push(SearchResult {
-                chunk: retrieved_doc.get_first(self.id).unwrap()
-                    .as_i64().unwrap().try_into().unwrap(),
+                chunk: retrieved_doc
+                    .get_first(self.id)
+                    .unwrap()
+                    .as_i64()
+                    .unwrap()
+                    .try_into()
+                    .unwrap(),
                 score: score as f64,
                 data: SearchResultData::String(
                     retrieved_doc
@@ -113,21 +111,25 @@ mod tests {
         let mut text_search = TantivyTextSearch::new();
 
         let samples = vec![
-            TextChunk {
+            Chunk {
                 id: 1,
                 text: "abc".to_string(),
+                ..Default::default()
             },
-            TextChunk {
+            Chunk {
                 id: 2,
                 text: "cde".to_string(),
+                ..Default::default()
             },
-            TextChunk {
+            Chunk {
                 id: 3,
                 text: "abe".to_string(),
+                ..Default::default()
             },
-            TextChunk {
+            Chunk {
                 id: 4,
                 text: "abx".to_string(),
+                ..Default::default()
             },
         ];
 
