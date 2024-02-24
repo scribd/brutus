@@ -1,4 +1,7 @@
 use std::env::*;
+use std::net::TcpListener;
+use std::os::unix::io::FromRawFd;
+use tide_tracing::TraceMiddleware;
 use tracing::log::*;
 
 mod api;
@@ -19,11 +22,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Starting brutus");
     let mut app = tide::new();
+
+    app.with(TraceMiddleware::new());
+
+    app.at("/")
+        .get(|_| async { Ok(format!("brutus v{}", env!("CARGO_PKG_VERSION"))) });
     app.at("/api/v1/").nest(api::routes()?);
+    app.at("/docs")
+        .get(tide::Redirect::new("/docs/ui/index.html"));
+    app.at("/docs/").serve_dir("docs/")?;
 
     let bind_to = var("BIND_TO").unwrap_or("0.0.0.0:8080".into());
     info!("Starting the HTTP handler on {bind_to}");
-    app.listen(bind_to).await?;
+
+    // This is to support hot reloading with catflap
+    if let Some(fd) = std::env::var("LISTEN_FD")
+        .ok()
+        .and_then(|fd| fd.parse().ok())
+    {
+        app.listen(unsafe { TcpListener::from_raw_fd(fd) }).await?;
+    } else {
+        app.listen(bind_to).await?;
+    }
 
     Ok(())
 }

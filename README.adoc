@@ -24,6 +24,12 @@ This project uses Rust, so builds and tests can be done with:
 * `cargo test`
 * _etc_
 
+Optionally for hot-reloading of the service during development:
+
+[source,bash]
+----
+cargo install cargo-watch catflap
+----
 
 === Testing against localstack
 
@@ -31,6 +37,17 @@ This project uses Rust, so builds and tests can be done with:
 ----
 cargo test --feature integration
 ----
+
+
+To run the hot-reloading webserver:
+
+[source,bash]
+----
+./scripts/live-reload
+----
+
+You can then open link:http://localhost:5000[localhost:5000]
+
 
 === Data file schema
 

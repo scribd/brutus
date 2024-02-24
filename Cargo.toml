@@ -19,6 +19,7 @@ tantivy = "0.21.1"
 tempfile = "3.10.0"
 thiserror = "1.0.30"
 url = "2.5.0"
+tide-tracing = "0.1.1"
 
 
 

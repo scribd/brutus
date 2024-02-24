@@ -112,15 +112,15 @@ impl State {
 #[derive(Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct Document {
     id: u64,
-    chunks: Vec<Chunk>,
+    pub chunks: Vec<Chunk>,
 }
 
 #[derive(Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct Chunk {
-    id: i64,
+    pub id: i64,
     sequence: Option<i32>,
     page: i32,
-    text: String,
+    pub text: String,
     embedding: Vec<f32>,
 }
 
@@ -145,7 +145,7 @@ mod tests {
         setup();
         let state = State::from_env()?;
 
-        let path = "doc_id_1106528470000.parquet";
+        let path = "1106528470000/v1.parquet";
         let doc = state
             .fetch_doc(&path)
             .await

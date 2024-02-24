@@ -9,7 +9,7 @@ use super::*;
 
 #[derive(Clone)]
 pub struct TextChunk {
-    pub id: u64,
+    pub id: i64,
     pub text: String,
 }
 
@@ -84,8 +84,10 @@ impl Search for TantivyTextSearch {
         for (score, doc_address) in top_docs {
             let retrieved_doc = searcher.doc(doc_address)?;
             println!("{}", self.schema.to_json(&retrieved_doc));
+            println!("wtf is this: {:?}", retrieved_doc.get_first(self.id));
             result.push(SearchResult {
-                chunk: retrieved_doc.get_first(self.id).unwrap().as_u64().unwrap(),
+                chunk: retrieved_doc.get_first(self.id).unwrap()
+                    .as_i64().unwrap().try_into().unwrap(),
                 score: score as f64,
                 data: SearchResultData::String(
                     retrieved_doc
@@ -131,7 +133,7 @@ mod tests {
 
         //todo is there a way to fail tests instead of unwrap ??
         for sample in samples.iter() {
-            text_search.add(sample).unwrap();
+            text_search.add(sample).expect("Failed to add sample");
         }
 
         let query = "abc".to_string();

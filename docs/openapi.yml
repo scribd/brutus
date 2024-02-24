@@ -4,9 +4,12 @@ info:
   description: |-
     Todo
   version: 1.0.11
+servers:
+  - url: /api/v1
+    description: Development v1 endpoint
 
 paths:
-  /doc/relSearch/{docId}:
+  /search/{docId}/relevance:
     post:
       tags:
         - doc
@@ -14,6 +17,7 @@ paths:
       parameters:
         - name: docId
           in: path
+          example: 1106528470000
           description: ID of Doc to search
           required: true
           schema:
@@ -131,8 +135,9 @@ components:
     RelevanceSearchRequestBody:
       type: object
       properties:
-       searchTerm:
+       query:
          type: string
+         example: chinchilla coats
     VectorSearchRequestBody:
       type: object
       properties:

@@ -20,9 +20,9 @@ use tracing::log::*;
 pub fn routes() -> Result<Server<State>> {
     let mut app = tide::with_state(State::from_env()?);
 
-    app.at("/vecSearch").post(vector_search);
-    app.at("/relSearch").post(relevance_search);
-    app.at("/hybridSearch").post(hybrid_search);
+    app.at("/search/:doc_id/vector").post(vector_search);
+    app.at("/search/:doc_id/relevance").post(relevance_search);
+    app.at("/search/:doc_id/hybrid").post(hybrid_search);
 
     debug!("Registered API routes: {app:?}");
     Ok(app)
@@ -30,19 +30,16 @@ pub fn routes() -> Result<Server<State>> {
 
 #[derive(Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct VectorSearchRequest {
-    doc: u64,
     query: Vec<f64>,
 }
 
 #[derive(Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct RelevanceSearchRequest {
-    doc: u64,
     query: String,
 }
 
 #[derive(Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct HybridSearchRequest {
-    doc: u64,
     query: String,
     vector: Vec<f64>,
 }
@@ -60,37 +57,29 @@ pub async fn hybrid_search(mut req: Request<State>) -> Result<Body> {
 /// POST /relSearch
 ///
 pub async fn relevance_search(mut req: Request<State>) -> Result<Body> {
-    let _request: RelevanceSearchRequest = req.body_json().await?;
+    let request: RelevanceSearchRequest = req.body_json().await?;
+    let doc_id = req.param("doc_id")?;
 
+    let doc = req
+        .state()
+        .fetch_doc(format!("{doc_id}/v1.parquet"))
+        .await?;
     let mut text_search = TantivyTextSearch::new();
 
-    //todo replace sampels with data from S3
-    let samples = vec![
-        TextChunk {
-            id: 1,
-            text: "abc".to_string(),
-        },
-        TextChunk {
-            id: 2,
-            text: "cde".to_string(),
-        },
-        TextChunk {
-            id: 3,
-            text: "abe".to_string(),
-        },
-        TextChunk {
-            id: 4,
-            text: "abx".to_string(),
-        },
-    ];
-
-    for sample in samples.iter() {
-        text_search.add(sample)?;
-    }
-
+    let _: Vec<_> = doc
+        .chunks
+        .iter()
+        .map(|chunk| {
+            // TODO: The clone is unnecessary here and we should really be using a uniform chunk object
+            text_search.add(&TextChunk {
+                id: chunk.id,
+                text: chunk.text.clone(),
+            })
+        })
+        .collect();
     text_search.commit()?;
 
-    let result = text_search.search(_request.query, samples.len())?;
+    let result = text_search.search(request.query, doc.chunks.len())?;
     Body::from_json(&result)
 }
 
