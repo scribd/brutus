@@ -1,5 +1,5 @@
-pub mod text_search;
-pub mod vector_search;
+pub mod hora_vector_index;
+pub mod tantivy_text_index;
 
 use crate::dal::Chunk;
 
@@ -31,17 +31,11 @@ pub trait Index {
     type QueryType;
     type ErrorType;
 
-    /// Default implementation is a no-op since not all [Search] implementations require it
-    fn commit(&mut self) -> Result<(), Self::ErrorType> {
-        Ok(())
-    }
     fn add(&mut self, chunk: &Chunk) -> Result<(), Self::ErrorType>;
 
     /// Default implementation is a no-op since not all [Search] implementations require it
-    //todo same as commit really so clean up
-    fn build(&mut self) -> Result<(), Self::ErrorType> {
-        Ok(())
-    }
+    fn build(&mut self) -> Result<(), Self::ErrorType>;
+
     fn search(
         &mut self,
         query: Self::QueryType,

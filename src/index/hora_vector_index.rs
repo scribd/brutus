@@ -12,6 +12,7 @@ pub enum HoraError {
 
 pub struct HoraVectorIndex {
     index: hora::index::bruteforce_idx::BruteForceIndex<f64, i64>,
+    is_built: bool,
 }
 
 impl HoraVectorIndex {
@@ -21,6 +22,8 @@ impl HoraVectorIndex {
                 dimension,
                 &hora::index::bruteforce_params::BruteForceParams::default(),
             ),
+            // TODO this is the same across all index types, should be moved to a common place
+            is_built: false,
         }
     }
 }
@@ -30,19 +33,21 @@ impl Index for HoraVectorIndex {
     type ErrorType = HoraError;
 
     fn add(&mut self, chunk: &Chunk) -> Result<(), Self::ErrorType> {
-        // Probably a more optimal way to do this
-        //for sample in chunk.vectors {
-        //  self.index.add(sample.as_slice(), chunk.id);
-        //}
         self.index
             .add(chunk.embedding.as_slice(), chunk.id)
             .map_err(|err| HoraError::Error(err.to_string()))
     }
 
     fn build(&mut self) -> Result<(), HoraError> {
-        self.index
-            .build(hora::core::metrics::Metric::Euclidean)
-            .map_err(|err| HoraError::Error(err.to_string()))
+        let build_result = self.index.build(hora::core::metrics::Metric::Euclidean);
+
+        match build_result {
+            Err(e) => Err(HoraError::Error(e.to_string())),
+            Ok(_) => {
+                self.is_built = true;
+                Ok(())
+            }
+        }
     }
 
     fn search(
@@ -50,17 +55,21 @@ impl Index for HoraVectorIndex {
         query: Self::QueryType,
         k: usize,
     ) -> Result<Vec<SearchResult>, Self::ErrorType> {
-        let nn = self.index.search_nodes(&query.as_slice(), k);
-        let response: Vec<SearchResult> = nn
-            .iter()
-            .map(|n| SearchResult {
-                chunk: n.0.idx().unwrap(), // todo throw error instead of unwrap .ok_or_else(|| HoraError("idx not found"))?,
-                score: n.1,
-                data: SearchResultData::Empty,
-            })
-            .collect();
+        if self.is_built {
+            let nn = self.index.search_nodes(&query.as_slice(), k);
+            let response: Vec<SearchResult> = nn
+                .iter()
+                .map(|n| SearchResult {
+                    chunk: n.0.idx().unwrap(), // todo throw error instead of unwrap .ok_or_else(|| HoraError("idx not found"))?,
+                    score: n.1,
+                    data: SearchResultData::Empty,
+                })
+                .collect();
 
-        Ok(response)
+            Ok(response)
+        } else {
+            Err(HoraError::Error("Index not built".to_string()))
+        }
     }
 }
 

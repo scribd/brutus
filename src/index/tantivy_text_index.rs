@@ -2,7 +2,7 @@
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::*;
-use tantivy::{doc, Index, ReloadPolicy, TantivyError};
+use tantivy::{doc, ReloadPolicy, TantivyError};
 use tempfile::TempDir;
 
 use super::*;
@@ -15,6 +15,7 @@ pub struct TantivyTextIndex {
     id: Field,
     text: Field,
     schema: Schema,
+    is_built: bool,
 }
 
 impl TantivyTextIndex {
@@ -26,7 +27,7 @@ impl TantivyTextIndex {
         schema_builder.add_u64_field("id", STORED);
 
         let schema = schema_builder.build();
-        let index = Index::create_in_dir(&index_path, schema.clone()).unwrap();
+        let index = tantivy::Index::create_in_dir(&index_path, schema.clone()).unwrap();
         let index_writer = index.writer(50_000_000).unwrap();
 
         TantivyTextIndex {
@@ -36,6 +37,7 @@ impl TantivyTextIndex {
             id: schema.get_field("id").unwrap(),
             text: schema.get_field("text").unwrap(),
             schema: schema,
+            is_built: false,
         }
     }
 }
@@ -44,8 +46,15 @@ impl Index for TantivyTextIndex {
     type QueryType = String;
     type ErrorType = TantivyError;
 
-    fn commit(&mut self) -> Result<(), Self::ErrorType> {
-        self.index_writer.commit().map(|_op| ())
+    fn build(&mut self) -> Result<(), Self::ErrorType> {
+        let build_result = self.index_writer.commit();
+        match build_result {
+            Err(e) => Err(e),
+            Ok(_) => {
+                self.is_built = true;
+                Ok(())
+            }
+        }
     }
 
     fn add(&mut self, chunk: &Chunk) -> Result<(), Self::ErrorType> {
@@ -58,47 +67,53 @@ impl Index for TantivyTextIndex {
     }
 
     fn search(&mut self, query: String, k: usize) -> Result<Vec<SearchResult>, Self::ErrorType> {
-        let reader = self
-            .index
-            .reader_builder()
-            .reload_policy(ReloadPolicy::OnCommit)
-            .try_into()?;
+        if self.is_built {
+            let reader = self
+                .index
+                .reader_builder()
+                .reload_policy(ReloadPolicy::OnCommit)
+                .try_into()?;
 
-        let searcher = reader.searcher();
+            let searcher = reader.searcher();
 
-        let query_parser = QueryParser::for_index(&self.index, vec![self.text]);
+            let query_parser = QueryParser::for_index(&self.index, vec![self.text]);
 
-        let query = query_parser.parse_query(&query)?;
+            let query = query_parser.parse_query(&query)?;
 
-        let top_docs = searcher.search(&query, &TopDocs::with_limit(k))?;
+            let top_docs = searcher.search(&query, &TopDocs::with_limit(k))?;
 
-        let mut result = Vec::with_capacity(top_docs.len());
-        //todo clean this up. Get rid of multiple unwraps map and throw error
-        for (score, doc_address) in top_docs {
-            let retrieved_doc = searcher.doc(doc_address)?;
-            println!("{}", self.schema.to_json(&retrieved_doc));
-            println!("wtf is this: {:?}", retrieved_doc.get_first(self.id));
-            result.push(SearchResult {
-                chunk: retrieved_doc
-                    .get_first(self.id)
-                    .unwrap()
-                    .as_i64()
-                    .unwrap()
-                    .try_into()
-                    .unwrap(),
-                score: score as f64,
-                data: SearchResultData::String(
-                    retrieved_doc
-                        .get_first(self.text)
+            let mut result = Vec::with_capacity(top_docs.len());
+            //todo clean this up. Get rid of multiple unwraps map and throw error
+            for (score, doc_address) in top_docs {
+                let retrieved_doc = searcher.doc(doc_address)?;
+                println!("{}", self.schema.to_json(&retrieved_doc));
+                println!("wtf is this: {:?}", retrieved_doc.get_first(self.id));
+                result.push(SearchResult {
+                    chunk: retrieved_doc
+                        .get_first(self.id)
                         .unwrap()
-                        .as_text()
+                        .as_i64()
                         .unwrap()
-                        .to_string(),
-                ),
-            });
+                        .try_into()
+                        .unwrap(),
+                    score: score as f64,
+                    data: SearchResultData::String(
+                        retrieved_doc
+                            .get_first(self.text)
+                            .unwrap()
+                            .as_text()
+                            .unwrap()
+                            .to_string(),
+                    ),
+                });
+            }
+
+            Ok(result)
+        } else {
+            Err(TantivyError::SchemaError(
+                "Index not built yet, call build() first".to_string(),
+            ))
         }
-
-        Ok(result)
     }
 }
 
@@ -139,7 +154,7 @@ mod tests {
         }
 
         let query = "abc".to_string();
-        text_search.commit().unwrap();
+        text_search.build().unwrap();
         let result = text_search.search(query, samples.len()).unwrap();
         println!("{:?} search result", result);
         assert!(!result.is_empty());

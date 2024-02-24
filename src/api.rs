@@ -1,6 +1,6 @@
 use crate::dal::*;
 use crate::index::{
-    text_search::TantivyTextIndex, vector_search::HoraVectorIndex, Index, SearchResult,
+    hora_vector_index::HoraVectorIndex, tantivy_text_index::TantivyTextIndex, Index, SearchResult,
 };
 
 use rand::Rng;
@@ -72,7 +72,7 @@ pub async fn relevance_search(mut req: Request<State>) -> Result<Body> {
             text_search.add(&chunk)
         })
         .collect();
-    text_search.commit()?;
+    text_search.build()?;
 
     let result = text_search.search(request.query, doc.chunks.len())?;
     Body::from_json(&result)
