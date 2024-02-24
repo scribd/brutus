@@ -10,13 +10,13 @@ pub enum HoraError {
     Error(String),
 }
 
-pub struct HoraVectorSearch {
+pub struct HoraVectorIndex {
     index: hora::index::bruteforce_idx::BruteForceIndex<f64, i64>,
 }
 
-impl HoraVectorSearch {
-    pub fn new(dimension: usize) -> HoraVectorSearch {
-        HoraVectorSearch {
+impl HoraVectorIndex {
+    pub fn new(dimension: usize) -> HoraVectorIndex {
+        HoraVectorIndex {
             index: hora::index::bruteforce_idx::BruteForceIndex::<f64, i64>::new(
                 dimension,
                 &hora::index::bruteforce_params::BruteForceParams::default(),
@@ -24,7 +24,7 @@ impl HoraVectorSearch {
         }
     }
 }
-impl Search for HoraVectorSearch {
+impl Index for HoraVectorIndex {
     // TODO: I think this can turn into a slice
     type QueryType = Vec<f64>;
     type ErrorType = HoraError;
@@ -74,7 +74,7 @@ mod tests {
         let mut rnd = rand::thread_rng();
         let n = 1000;
         let d = 1024;
-        let mut hora_search = HoraVectorSearch::new(d);
+        let mut hora_search = HoraVectorIndex::new(d);
         for i in 0..n {
             let mut sample: Vec<f64> = Vec::with_capacity(d);
             for _ in 0..d {

@@ -7,7 +7,7 @@ use tracing::log::*;
 mod api;
 mod dal;
 mod error;
-mod search;
+mod index;
 
 //use core::slice::SlicePattern;
 #[async_std::main]

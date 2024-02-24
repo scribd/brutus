@@ -1,6 +1,6 @@
 use crate::dal::*;
-use crate::search::{
-    text_search::TantivyTextSearch, vector_search::HoraVectorSearch, Search, SearchResult,
+use crate::index::{
+    text_search::TantivyTextIndex, vector_search::HoraVectorIndex, Index, SearchResult,
 };
 
 use rand::Rng;
@@ -62,7 +62,7 @@ pub async fn relevance_search(mut req: Request<State>) -> Result<Body> {
         .state()
         .fetch_doc(format!("{doc_id}/v1.parquet"))
         .await?;
-    let mut text_search = TantivyTextSearch::new();
+    let mut text_search = TantivyTextIndex::new();
 
     let _: Vec<_> = doc
         .chunks
@@ -93,7 +93,7 @@ pub async fn vector_search(mut req: Request<State>) -> Result<Body> {
 
     // infer number of dimensions from the first chunk
     const DIMENSION: usize = 1024;
-    let mut vector_search = HoraVectorSearch::new(DIMENSION);
+    let mut vector_search = HoraVectorIndex::new(DIMENSION);
 
     let _: Vec<_> = doc
         .chunks

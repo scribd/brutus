@@ -8,7 +8,7 @@ use tempfile::TempDir;
 use super::*;
 
 //would be nice to understand how to do this in a more elegant way lots of members being passed around here lots of state which i dont like
-pub struct TantivyTextSearch {
+pub struct TantivyTextIndex {
     index_path: TempDir,
     index_writer: tantivy::IndexWriter,
     index: tantivy::Index,
@@ -17,10 +17,9 @@ pub struct TantivyTextSearch {
     schema: Schema,
 }
 
-//todo fail if search is called without adding any documents
-impl TantivyTextSearch {
+impl TantivyTextIndex {
     //todo map errors and use result types better instead of unwrap but need to enable flatten feature
-    pub fn new() -> TantivyTextSearch {
+    pub fn new() -> TantivyTextIndex {
         let index_path = TempDir::new().unwrap();
         let mut schema_builder = Schema::builder();
         schema_builder.add_text_field("text", TEXT | STORED);
@@ -30,7 +29,7 @@ impl TantivyTextSearch {
         let index = Index::create_in_dir(&index_path, schema.clone()).unwrap();
         let index_writer = index.writer(50_000_000).unwrap();
 
-        TantivyTextSearch {
+        TantivyTextIndex {
             index_path: index_path,
             index_writer: index_writer,
             index: index,
@@ -41,7 +40,7 @@ impl TantivyTextSearch {
     }
 }
 
-impl Search for TantivyTextSearch {
+impl Index for TantivyTextIndex {
     type QueryType = String;
     type ErrorType = TantivyError;
 
@@ -109,7 +108,7 @@ mod tests {
 
     #[test]
     fn test_text_search() {
-        let mut text_search = TantivyTextSearch::new();
+        let mut text_search = TantivyTextIndex::new();
 
         let samples = vec![
             Chunk {

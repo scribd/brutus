@@ -27,7 +27,7 @@ pub struct SearchResult {
 }
 
 /// All search implementations should implement this interface
-pub trait Search {
+pub trait Index {
     type QueryType;
     type ErrorType;
 
