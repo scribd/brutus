@@ -84,7 +84,7 @@ mod tests {
         let n = 1000;
         let d = 1024;
         let mut hora_search = HoraVectorIndex::new(d);
-        for i in 0..n {
+        for _i in 0..n {
             let mut sample: Vec<f64> = Vec::with_capacity(d);
             for _ in 0..d {
                 sample.push(rnd.gen());
@@ -104,7 +104,7 @@ mod tests {
             seed.push(rnd.gen());
         }
         let target: usize = rnd.gen_range(0..n);
-        let result = hora_search.search(seed, n).unwrap();
+        let result = hora_search.search(seed, target).unwrap();
         assert!(!result.is_empty());
     }
 }

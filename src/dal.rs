@@ -11,6 +11,7 @@ use object_store::{aws::AmazonS3Builder, local::LocalFileSystem, path::Path, Obj
 use parquet::arrow::async_reader::*;
 use serde::{Deserialize, Serialize};
 use tracing::log::*;
+use tracing::{event, info_span, Level};
 
 use std::sync::Arc;
 
@@ -45,11 +46,19 @@ impl State {
 
     pub async fn fetch_doc(
         &self,
-        prefix: impl AsRef<str>,
+        prefix: impl AsRef<str> + std::fmt::Debug + tracing::Value,
     ) -> Result<Document, crate::error::Error> {
+        let span = info_span!("fetch_doc");
+        let _trace_guard = span.enter();
+        let start = std::time::Instant::now();
+
         let location = Path::from(prefix.as_ref());
 
         let meta = self.store.head(&location).await.unwrap();
+        event!(Level::INFO,
+                prefix=prefix,
+                elapsed =?start.elapsed(),
+                "Loaded metadata for file");
 
         // Show Parquet metadata
         let reader = ParquetObjectReader::new(self.store.clone(), meta);
@@ -59,6 +68,7 @@ impl State {
         let mut document = Document::default();
 
         while let Some(Ok(batch)) = stream.next().await {
+            event!(Level::INFO, elapsed= ?start.elapsed(), "Loaded batch");
             let ids: &PrimitiveArray<Int64Type> = as_primitive_array(
                 batch
                     .column_by_name("chunk_id")
@@ -102,6 +112,7 @@ impl State {
                 };
                 document.chunks.push(chunk);
             }
+            event!(Level::INFO, elapsed = ?start.elapsed(), "Processed parquet file");
         }
 
         Ok(document)
@@ -123,11 +134,11 @@ pub struct Chunk {
     pub embedding: Vec<f64>,
 }
 
+#[cfg(feature = "integration")]
 #[cfg(test)]
-mod tests {
+mod integration_tests {
     use super::*;
 
-    #[cfg(feature = "integration")]
     fn setup() {
         use std::env;
 
@@ -138,7 +149,6 @@ mod tests {
         env::set_var("BRUTUS_DOCUMENTS_URL", "s3://brutus-data");
     }
 
-    #[cfg(feature = "integration")]
     #[async_std::test]
     async fn test_load_static_file() -> Result<(), crate::error::Error> {
         setup();

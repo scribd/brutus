@@ -3,7 +3,6 @@ use crate::index::{
     hora_vector_index::HoraVectorIndex, tantivy_text_index::TantivyTextIndex, Index, SearchResult,
 };
 
-use rand::Rng;
 ///
 /// The API module contains all the REST APIs which brutus provides
 ///
@@ -11,6 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use tide::{Body, Request, Result, Server};
 use tracing::log::*;
+use tracing::{event, info_span, Level};
 
 /// Main handler for all the API routes
 ///
@@ -55,6 +55,10 @@ pub async fn hybrid_search(mut req: Request<State>) -> Result<Body> {
 /// POST /relSearch
 ///
 pub async fn relevance_search(mut req: Request<State>) -> Result<Body> {
+    let span = info_span!("relevance_search");
+    let _guard = span.enter();
+    let start = std::time::Instant::now();
+
     let request: RelevanceSearchRequest = req.body_json().await?;
     let doc_id = req.param("doc_id")?;
 
@@ -63,18 +67,20 @@ pub async fn relevance_search(mut req: Request<State>) -> Result<Body> {
         .fetch_doc(format!("{doc_id}/v1.parquet"))
         .await?;
     let mut text_search = TantivyTextIndex::new();
+    event!(Level::INFO, elapsed=?start.elapsed(), "loaded parquet file");
 
     let _: Vec<_> = doc
         .chunks
         .iter()
-        .map(|chunk| {
-            // TODO: The clone is unnecessary here and we should really be using a uniform chunk object
-            text_search.add(&chunk)
-        })
+        .map(|chunk| text_search.add(&chunk))
         .collect();
+    event!(Level::INFO, elapsed=?start.elapsed(), "chunks added to text search");
+
     text_search.build()?;
+    event!(Level::INFO, elapsed=?start.elapsed(), "additions committed");
 
     let result = text_search.search(request.query, doc.chunks.len())?;
+    event!(Level::INFO, elapsed=?start.elapsed(), "search completed and returning");
     Body::from_json(&result)
 }
 

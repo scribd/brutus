@@ -4,6 +4,7 @@ use tantivy::query::QueryParser;
 use tantivy::schema::*;
 use tantivy::{doc, ReloadPolicy, TantivyError};
 use tempfile::TempDir;
+use tracing::{event, info_span, Level};
 
 use super::*;
 
@@ -68,6 +69,10 @@ impl Index for TantivyTextIndex {
 
     fn search(&mut self, query: String, k: usize) -> Result<Vec<SearchResult>, Self::ErrorType> {
         if self.is_built {
+            let span = info_span!("TantivyTextSearch::search");
+            let _guard = span.enter();
+            let start = std::time::Instant::now();
+
             let reader = self
                 .index
                 .reader_builder()
@@ -75,12 +80,12 @@ impl Index for TantivyTextIndex {
                 .try_into()?;
 
             let searcher = reader.searcher();
-
             let query_parser = QueryParser::for_index(&self.index, vec![self.text]);
-
             let query = query_parser.parse_query(&query)?;
+            event!(Level::INFO, elapsed=?start.elapsed(), "query parsed");
 
             let top_docs = searcher.search(&query, &TopDocs::with_limit(k))?;
+            event!(Level::INFO, elapsed=?start.elapsed(), "search executed");
 
             let mut result = Vec::with_capacity(top_docs.len());
             //todo clean this up. Get rid of multiple unwraps map and throw error
@@ -108,6 +113,7 @@ impl Index for TantivyTextIndex {
                 });
             }
 
+            event!(Level::INFO, elapsed=?start.elapsed(), "results prepared");
             Ok(result)
         } else {
             Err(TantivyError::SchemaError(
