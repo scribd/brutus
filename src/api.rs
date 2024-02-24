@@ -88,6 +88,10 @@ pub async fn relevance_search(mut req: Request<State>) -> Result<Body> {
 /// POST /vecSearch
 ///
 pub async fn vector_search(mut req: Request<State>) -> Result<Body> {
+    let span = info_span!("relevance_search");
+    let _guard = span.enter();
+    let start = std::time::Instant::now();
+
     let request: VectorSearchRequest = req.body_json().await?;
     let doc_id = req.param("doc_id")?;
 
@@ -96,8 +100,9 @@ pub async fn vector_search(mut req: Request<State>) -> Result<Body> {
         .state()
         .fetch_doc(format!("{doc_id}/v1.parquet"))
         .await?;
+    event!(Level::INFO, elapsed=?start.elapsed(), "loaded parquet file");
 
-    // infer number of dimensions from the first chunk
+    // todo infer number of dimensions from the first chunk
     const DIMENSION: usize = 1024;
     let mut vector_search = HoraVectorIndex::new(DIMENSION);
 
@@ -105,12 +110,16 @@ pub async fn vector_search(mut req: Request<State>) -> Result<Body> {
         .chunks
         .iter()
         .map(|chunk| {
-            // TODO: The clone is unnecessary here and we should really be using a uniform chunk object
             vector_search.add(&chunk)
         })
         .collect();
+    event!(Level::INFO, elapsed=?start.elapsed(), "chunks added to vector index");
 
     vector_search.build()?;
+    event!(Level::INFO, elapsed=?start.elapsed(), "index built");
+
     let response = vector_search.search(request.query, doc.chunks.len())?;
+    event!(Level::INFO, elapsed=?start.elapsed(), "search completed and returning");
+
     Body::from_json(&response)
 }
