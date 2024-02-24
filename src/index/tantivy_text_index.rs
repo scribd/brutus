@@ -24,8 +24,22 @@ impl TantivyTextIndex {
     pub fn new() -> TantivyTextIndex {
         let index_path = TempDir::new().unwrap();
         let mut schema_builder = Schema::builder();
-        schema_builder.add_text_field("text", TEXT | STORED);
-        schema_builder.add_u64_field("id", STORED);
+
+        let text_options = TextOptions::default()
+            .set_indexing_options(
+                TextFieldIndexing::default()
+                .set_tokenizer("en_stem")
+                .set_index_option(IndexRecordOption::Basic)
+        )
+        .set_stored();
+
+        let id_options = NumericOptions::default()
+            .set_indexed()
+            .set_fast()
+            .set_stored();
+
+        schema_builder.add_text_field("text", text_options);//TEXT | STORED);
+        schema_builder.add_i64_field("id", id_options); //STORED);
 
         let schema = schema_builder.build();
         let index = tantivy::Index::create_in_dir(&index_path, schema.clone()).unwrap();
