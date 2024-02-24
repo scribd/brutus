@@ -45,7 +45,7 @@ paths:
         '400':
           description: Invalid status value
           
-  /doc/vecSearch/{docId}:
+  /search/{docId}/vector:
     post:
       tags:
         - doc
@@ -141,7 +141,7 @@ components:
     VectorSearchRequestBody:
       type: object
       properties:
-       seedVector:
+       query:
           type:  array
           items: 
             type: number

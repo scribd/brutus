@@ -17,6 +17,7 @@ pub struct TantivyTextSearch {
     schema: Schema,
 }
 
+//todo fail if search is called without adding any documents
 impl TantivyTextSearch {
     //todo map errors and use result types better instead of unwrap but need to enable flatten feature
     pub fn new() -> TantivyTextSearch {

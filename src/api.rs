@@ -83,26 +83,28 @@ pub async fn relevance_search(mut req: Request<State>) -> Result<Body> {
 ///
 pub async fn vector_search(mut req: Request<State>) -> Result<Body> {
     let request: VectorSearchRequest = req.body_json().await?;
+    let doc_id = req.param("doc_id")?;
 
+    //todo move this to a common function
+    let doc = req
+        .state()
+        .fetch_doc(format!("{doc_id}/v1.parquet"))
+        .await?;
+
+    // infer number of dimensions from the first chunk
     const DIMENSION: usize = 1024;
     let mut vector_search = HoraVectorSearch::new(DIMENSION);
 
-    // \todo read samples from s3 instead of making these up
-    let mut rnd = rand::thread_rng();
-    let n: usize = 1000;
-    for _i in 0..n {
-        let mut sample: Vec<f64> = Vec::with_capacity(DIMENSION);
-        for _j in 0..DIMENSION {
-            sample.push(rnd.gen());
-        }
-        let chunk = Chunk {
-            id: rnd.gen(),
-            embedding: sample,
-            ..Default::default()
-        };
-        vector_search.add(&chunk)?;
-    }
+    let _: Vec<_> = doc
+        .chunks
+        .iter()
+        .map(|chunk| {
+            // TODO: The clone is unnecessary here and we should really be using a uniform chunk object
+            vector_search.add(&chunk)
+        })
+        .collect();
 
-    let response = vector_search.search(request.query, n)?;
+    vector_search.build()?;
+    let response = vector_search.search(request.query, doc.chunks.len())?;
     Body::from_json(&response)
 }

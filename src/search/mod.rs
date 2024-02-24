@@ -38,6 +38,7 @@ pub trait Search {
     fn add(&mut self, chunk: &Chunk) -> Result<(), Self::ErrorType>;
 
     /// Default implementation is a no-op since not all [Search] implementations require it
+    //todo same as commit really so clean up
     fn build(&mut self) -> Result<(), Self::ErrorType> {
         Ok(())
     }
