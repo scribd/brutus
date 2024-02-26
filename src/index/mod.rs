@@ -19,11 +19,11 @@ pub enum SearchResultData {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct SearchResult {
     /// The chunk's ID
-    chunk: i64,
+    pub chunk: i64,
     /// Result's search score
-    score: f64,
+    pub score: f64,
     /// Optional data to return with the [SearchResult]
-    data: SearchResultData,
+    pub data: SearchResultData,
 }
 
 /// All search implementations should implement this interface

@@ -82,7 +82,7 @@ paths:
           description: Invalid status value
           
           
-  /doc/hybridSearch/{docId}:
+  /search/{docId}/hybrid:
     post:
       tags:
         - doc
@@ -125,9 +125,9 @@ components:
     HybridSearchRequestBody:
       type: object
       properties:
-       searchTerm:
+       query:
          type: string
-       seedVector:
+       vector:
           type:  array
           items: 
             type: number

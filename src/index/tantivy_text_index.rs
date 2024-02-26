@@ -28,16 +28,15 @@ impl TantivyTextIndex {
         let text_options = TextOptions::default()
             .set_indexing_options(
                 TextFieldIndexing::default()
-                .set_tokenizer("en_stem")
-                .set_index_option(IndexRecordOption::Basic)
-        )
-        .set_stored();
+                    .set_tokenizer("en_stem")
+                    .set_index_option(IndexRecordOption::Basic),
+            )
+            .set_stored();
 
-        let id_options = NumericOptions::default()
-        .set_stored();
+        let id_options = NumericOptions::default().set_stored();
 
         schema_builder.add_text_field("text", text_options);
-        schema_builder.add_i64_field("id", id_options); 
+        schema_builder.add_i64_field("id", id_options);
 
         let schema = schema_builder.build();
         let index = tantivy::Index::create_in_dir(&index_path, schema.clone()).unwrap();
