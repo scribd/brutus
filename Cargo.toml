@@ -20,9 +20,13 @@ tempfile = "3.10.0"
 thiserror = "1.0.30"
 url = "2.5.0"
 tide-tracing = { version = "0.1.1", features = ["request_id"]}
+serde_json = "1.0.114"
 
 
 [features]
 default = []
 # The integration feature just exists as a gate to allow for conditional exclusion of the tests which rely on docker-compose
 integration = []
+
+[dev-dependencies]
+tide-testing = "0.1.3"

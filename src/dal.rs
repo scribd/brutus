@@ -139,19 +139,9 @@ pub struct Chunk {
 mod integration_tests {
     use super::*;
 
-    fn setup() {
-        use std::env;
-
-        env::set_var("AWS_ACCESS_KEY_ID", "deltalake");
-        env::set_var("AWS_SECRET_ACCESS_KEY", "weloverust");
-        env::set_var("AWS_ENDPOINT", "http://localhost:4566");
-        env::set_var("AWS_ALLOW_HTTP", "true");
-        env::set_var("BRUTUS_DOCUMENTS_URL", "s3://brutus-data");
-    }
-
     #[async_std::test]
     async fn test_load_static_file() -> Result<(), crate::error::Error> {
-        setup();
+        crate::test_utils::setup_env();
         let state = State::from_env()?;
 
         let path = "1106528470000/v1.parquet";

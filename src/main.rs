@@ -8,6 +8,8 @@ mod api;
 mod dal;
 mod error;
 mod index;
+#[cfg(feature = "integration")]
+mod test_utils;
 
 //use core::slice::SlicePattern;
 #[async_std::main]

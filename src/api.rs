@@ -48,7 +48,7 @@ pub struct HybridSearchRequest {
 /// POST /relSearch
 ///
 pub async fn hybrid_search(mut req: Request<State>) -> Result<Body> {
-    let span = info_span!("relevance_search");
+    let span = info_span!("hybrid_search");
     let _guard = span.enter();
     let start = std::time::Instant::now();
 
@@ -183,4 +183,51 @@ pub async fn vector_search(mut req: Request<State>) -> Result<Body> {
     event!(Level::INFO, elapsed=?start.elapsed(), "search completed and returning");
 
     Body::from_json(&response)
+}
+
+#[cfg(feature = "integration")]
+#[cfg(test)]
+mod integration_tests {
+    use super::*;
+    use tide_testing::TideTestingExt;
+
+    /// Return a constructed test [tide::Server] of the API
+    async fn setup() -> Server<State> {
+        crate::test_utils::setup_env();
+        super::routes().expect("Failed to get routes")
+    }
+
+    #[async_std::test]
+    async fn test_relevance_search() -> Result<()> {
+        let app = setup().await;
+
+        let _response: serde_json::Value = app
+            .post("/search/1106528470000/relevance")
+            .body(Body::from_string(r#"{"query" : "rust"}"#.into()))
+            .content_type("application/json")
+            .recv_json()
+            .await
+            .expect("Failed to send vector search query");
+        Ok(())
+    }
+
+    #[async_std::test]
+    async fn test_hybrid() -> Result<()> {
+        todo!("The search will fail if there are not 1024 vectors");
+
+        let app = setup().await;
+        let request = serde_json::json!({
+            "query" : "rust",
+            "vector" : []
+        });
+
+        let _response: serde_json::Value = app
+            .post("/search/1106528470000/hybrid")
+            .body(Body::from_json(&request)?)
+            .content_type("application/json")
+            .recv_json()
+            .await
+            .expect("Failed to send vector search query");
+        Ok(())
+    }
 }
