@@ -1,14 +1,6 @@
 use hora::core::ann_index::ANNIndex;
-use thiserror::Error;
 
 use super::*;
-
-#[derive(Debug, Clone, Error)]
-pub enum HoraError {
-    /// Generic error message todo add more specific types
-    #[error("An Error Happened with the Hora Library '{0}'")]
-    Error(String),
-}
 
 pub struct HoraVectorIndex {
     index: hora::index::bruteforce_idx::BruteForceIndex<f64, i64>,
@@ -30,19 +22,18 @@ impl HoraVectorIndex {
 impl Index for HoraVectorIndex {
     // TODO: I think this can turn into a slice
     type QueryType = Vec<f64>;
-    type ErrorType = HoraError;
 
-    fn add(&mut self, chunk: &Chunk) -> Result<(), Self::ErrorType> {
+    fn add(&mut self, chunk: &Chunk) -> Result<(), SearchError> {
         self.index
             .add(chunk.embedding.as_slice(), chunk.id)
-            .map_err(|err| HoraError::Error(err.to_string()))
+            .map_err(|err| SearchError::Generic(err.to_string()))
     }
 
-    fn build(&mut self) -> Result<(), HoraError> {
+    fn build(&mut self) -> Result<(), SearchError> {
         let build_result = self.index.build(hora::core::metrics::Metric::Euclidean);
 
         match build_result {
-            Err(e) => Err(HoraError::Error(e.to_string())),
+            Err(e) => Err(SearchError::Generic(e.to_string())),
             Ok(_) => {
                 self.is_built = true;
                 Ok(())
@@ -54,9 +45,9 @@ impl Index for HoraVectorIndex {
         &mut self,
         query: Self::QueryType,
         k: usize,
-    ) -> Result<Vec<SearchResult>, Self::ErrorType> {
+    ) -> Result<Vec<SearchResult>, SearchError> {
         if self.is_built {
-            let nn = self.index.search_nodes(&query.as_slice(), k);
+            let nn = self.index.search_nodes(query.as_slice(), k);
             let response: Vec<SearchResult> = nn
                 .iter()
                 .map(|n| SearchResult {
@@ -68,7 +59,7 @@ impl Index for HoraVectorIndex {
 
             Ok(response)
         } else {
-            Err(HoraError::Error("Index not built".to_string()))
+            Err(SearchError::Generic("Index not built".to_string()))
         }
     }
 }

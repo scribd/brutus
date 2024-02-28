@@ -43,12 +43,12 @@ impl TantivyTextIndex {
         let index_writer = index.writer(50_000_000).unwrap();
 
         TantivyTextIndex {
-            index_path: index_path,
-            index_writer: index_writer,
-            index: index,
+            index_path,
+            index_writer,
+            index,
             id: schema.get_field("id").unwrap(),
             text: schema.get_field("text").unwrap(),
-            schema: schema,
+            schema,
             is_built: false,
         }
     }
@@ -56,12 +56,11 @@ impl TantivyTextIndex {
 
 impl Index for TantivyTextIndex {
     type QueryType = String;
-    type ErrorType = TantivyError;
 
-    fn build(&mut self) -> Result<(), Self::ErrorType> {
+    fn build(&mut self) -> Result<(), SearchError> {
         let build_result = self.index_writer.commit();
         match build_result {
-            Err(e) => Err(e),
+            Err(e) => Err(e.into()),
             Ok(_) => {
                 self.is_built = true;
                 Ok(())
@@ -69,16 +68,17 @@ impl Index for TantivyTextIndex {
         }
     }
 
-    fn add(&mut self, chunk: &Chunk) -> Result<(), Self::ErrorType> {
+    fn add(&mut self, chunk: &Chunk) -> Result<(), SearchError> {
         //todo the clone here smells dirty ...
-        self.index_writer
+        Ok(self
+            .index_writer
             .add_document(doc!(
             self.id => chunk.id,
             self.text => chunk.text.clone()))
-            .map(|_| ())
+            .map(|_| ())?)
     }
 
-    fn search(&mut self, query: String, k: usize) -> Result<Vec<SearchResult>, Self::ErrorType> {
+    fn search(&mut self, query: String, k: usize) -> Result<Vec<SearchResult>, SearchError> {
         if self.is_built {
             let span = info_span!("TantivyTextSearch::search");
             let _guard = span.enter();
@@ -127,9 +127,10 @@ impl Index for TantivyTextIndex {
             event!(Level::INFO, elapsed=?start.elapsed(), "results prepared");
             Ok(result)
         } else {
-            Err(TantivyError::SchemaError(
-                "Index not built yet, call build() first".to_string(),
-            ))
+            Err(
+                TantivyError::SchemaError("Index not built yet, call build() first".to_string())
+                    .into(),
+            )
         }
     }
 }

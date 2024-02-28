@@ -40,7 +40,7 @@ impl State {
         };
 
         Ok(Self {
-            store: store.into(),
+            store,
         })
     }
 
