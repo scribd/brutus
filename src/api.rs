@@ -71,7 +71,11 @@ pub async fn hybrid_search(mut req: Request<State>) -> tide::Result<Body> {
     let _: Vec<_> = doc
         .chunks
         .iter()
-        .map(|chunk| text_search.add(chunk).map(|_| vector_search.add(chunk)))
+        .map(|chunk| {
+            let _ = text_search.add(chunk);
+            let _ = vector_search.add(chunk);
+            ()
+        })
         .collect();
 
     event!(Level::INFO, elapsed=?start.elapsed(), "chunks added to text and vector index");
@@ -106,11 +110,10 @@ pub async fn hybrid_search(mut req: Request<State>) -> tide::Result<Body> {
         .collect::<HashMap<_, _>>();
 
     //todo probably lots of cleanup here initial POC
-    //remove clone
     //whats the best way to combine scores ??
     //should individual scores also be returned ??
     let response = vector_results
-        .iter()
+        .into_iter()
         .map(|sr| SearchResult {
             chunk: sr.chunk,
             score: sr.score
@@ -119,12 +122,11 @@ pub async fn hybrid_search(mut req: Request<State>) -> tide::Result<Body> {
                     .map(|sr| sr.score)
                     .unwrap_or(0.0_f64),
             // todo return text
-            data: sr.data.clone(),
+            data: sr.data,
         })
         .collect::<Vec<_>>();
 
     event!(Level::INFO, elapsed=?start.elapsed(), "scores combined and returning");
-
     Body::from_json(&response)
 }
 

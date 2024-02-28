@@ -39,9 +39,7 @@ impl State {
             }
         };
 
-        Ok(Self {
-            store,
-        })
+        Ok(Self { store })
     }
 
     pub async fn fetch_doc(
