@@ -3,14 +3,12 @@ use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::*;
 use tantivy::{doc, ReloadPolicy, TantivyError};
-use tempfile::TempDir;
 use tracing::{event, info_span, Level};
 
 use super::*;
 
 //would be nice to understand how to do this in a more elegant way lots of members being passed around here lots of state which i dont like
 pub struct TantivyTextIndex {
-    index_path: TempDir,
     index_writer: tantivy::IndexWriter,
     index: tantivy::Index,
     id: Field,
@@ -22,7 +20,6 @@ pub struct TantivyTextIndex {
 impl TantivyTextIndex {
     //todo map errors and use result types better instead of unwrap but need to enable flatten feature
     pub fn new() -> TantivyTextIndex {
-        let index_path = TempDir::new().unwrap();
         let mut schema_builder = Schema::builder();
 
         let text_options = TextOptions::default()
@@ -39,11 +36,10 @@ impl TantivyTextIndex {
         schema_builder.add_i64_field("id", id_options);
 
         let schema = schema_builder.build();
-        let index = tantivy::Index::create_in_dir(&index_path, schema.clone()).unwrap();
+        let index = tantivy::Index::create_in_ram(schema.clone());
         let index_writer = index.writer(50_000_000).unwrap();
 
         TantivyTextIndex {
-            index_path,
             index_writer,
             index,
             id: schema.get_field("id").unwrap(),

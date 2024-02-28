@@ -3,9 +3,9 @@
 ///
 /// This module is responsible for all the interactions with S3
 ///
-use arrow::array::cast::*;
-use arrow::array::*;
-use arrow::datatypes::*;
+use arrow_array::cast::*;
+use arrow_array::types::*;
+use arrow_array::*;
 use async_std::stream::StreamExt;
 use object_store::{aws::AmazonS3Builder, local::LocalFileSystem, path::Path, ObjectStore};
 use parquet::arrow::async_reader::*;
