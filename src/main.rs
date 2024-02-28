@@ -7,6 +7,7 @@ use tracing::log::*;
 mod api;
 mod dal;
 mod error;
+mod fusion;
 mod index;
 #[cfg(feature = "integration")]
 mod test_utils;
