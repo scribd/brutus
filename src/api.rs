@@ -1,8 +1,3 @@
-///
-/// The API module contains all the REST APIs which brutus provides
-///
-use std::collections::HashMap;
-
 use crate::fusion::Fusion;
 use crate::index::{
     hora_vector_index::HoraVectorIndex, tantivy_text_index::TantivyTextIndex, Index, SearchError,
@@ -75,7 +70,6 @@ pub async fn hybrid_search(mut req: Request<State>) -> tide::Result<Body> {
         .map(|chunk| {
             let _ = text_search.add(chunk);
             let _ = vector_search.add(chunk);
-            ()
         })
         .collect();
 
@@ -86,7 +80,7 @@ pub async fn hybrid_search(mut req: Request<State>) -> tide::Result<Body> {
 
     let text: JoinHandle<Result<Vec<SearchResult>, SearchError>> = spawn(async move {
         text_search.build()?;
-        let mut txt_result = text_search.search(request.query, chunk_num)?;
+        let txt_result = text_search.search(request.query, chunk_num)?;
         event!(Level::INFO, elapsed=?start.elapsed(), "text search completed");
         Ok(txt_result)
     });

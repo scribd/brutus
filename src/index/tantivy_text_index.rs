@@ -101,13 +101,7 @@ impl Index for TantivyTextIndex {
                 println!("{}", self.schema.to_json(&retrieved_doc));
                 println!("wtf is this: {:?}", retrieved_doc.get_first(self.id));
                 result.push(SearchResult {
-                    chunk: retrieved_doc
-                        .get_first(self.id)
-                        .unwrap()
-                        .as_i64()
-                        .unwrap()
-                        .try_into()
-                        .unwrap(),
+                    chunk: retrieved_doc.get_first(self.id).unwrap().as_i64().unwrap(),
                     score: score as f64,
                     data: SearchResultData::String(
                         retrieved_doc

@@ -14,7 +14,7 @@ impl Fusion for RankedFusion {
         // remove repeated code i.e. compares score to a func
 
         fn rank(m: &HashMap<i64, (f64, &SearchResult)>, id: &i64) -> f64 {
-            m.get(&id).map(|(r, _)| r.clone()).unwrap_or(0.0_f64)
+            m.get(id).map(|(r, _)| *r).unwrap_or(0.0_f64)
         }
 
         fn data(
@@ -23,11 +23,11 @@ impl Fusion for RankedFusion {
             id: &i64,
         ) -> SearchResultData {
             let d1 = r1
-                .get(&id)
+                .get(id)
                 .map(|(_, r)| r.data.clone())
                 .unwrap_or(SearchResultData::Empty);
             let d2 = r2
-                .get(&id)
+                .get(id)
                 .map(|(_, r)| r.data.clone())
                 .unwrap_or(SearchResultData::Empty);
 
@@ -64,9 +64,9 @@ impl Fusion for RankedFusion {
         let mut result = unique_ids
             .iter()
             .map(|id| SearchResult {
-                chunk: id.clone(),
-                score: (rank(&r1_ranked, &id) + rank(&r2_ranked, &id)) / 2.0,
-                data: data(&r1_ranked, &r2_ranked, &id),
+                chunk: *id,
+                score: (rank(&r1_ranked, id) + rank(&r2_ranked, id)) / 2.0,
+                data: data(&r1_ranked, &r2_ranked, id),
             })
             .collect::<Vec<_>>();
 
