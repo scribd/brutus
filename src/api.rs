@@ -4,13 +4,12 @@
 use std::collections::HashMap;
 
 use crate::fusion::Fusion;
-use crate::{dal::*, fusion};
 use crate::index::{
     hora_vector_index::HoraVectorIndex, tantivy_text_index::TantivyTextIndex, Index, SearchError,
     SearchResult,
 };
+use crate::{dal::*, fusion};
 
-use arrow::array::timezone::Tz;
 use async_std::prelude::*;
 use async_std::task::{spawn, JoinHandle};
 use serde::{Deserialize, Serialize};
@@ -102,12 +101,11 @@ pub async fn hybrid_search(mut req: Request<State>) -> tide::Result<Body> {
     //
     // Both are results types, and ? will unpack those errors below
     let (vector_results, text_results) = vector.join(text).await;
-    let text_results = text_results?;
-    let vector_results = vector_results?;
+    let mut text_results = text_results?;
+    let mut vector_results = vector_results?;
 
+    let response = fusion::RankedFusion::merge(&mut text_results, &mut vector_results);
 
-    let response = fusion::RankedFusion::merge(&mut txt_result, &mut vector_result);
-    
     event!(Level::INFO, elapsed=?start.elapsed(), "scores combined and returning");
     Body::from_json(&response)
 }

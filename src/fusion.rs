@@ -43,15 +43,14 @@ impl Fusion for RankedFusion {
         let r1_ranked = r1
             .iter()
             .enumerate()
-            .map(|(i, sr)| (sr.chunk, ((i as f64 + 1.0)/r1.len() as f64, sr)))
+            .map(|(i, sr)| (sr.chunk, ((i as f64 + 1.0) / r1.len() as f64, sr)))
             .collect::<HashMap<_, _>>();
-
 
         r2.sort_by(|a, b| a.score.total_cmp(&b.score));
         let r2_ranked = r2
             .iter()
             .enumerate()
-            .map(|(i, sr)| (sr.chunk, ((i as f64 + 1.0)/r2.len() as f64, sr)))
+            .map(|(i, sr)| (sr.chunk, ((i as f64 + 1.0) / r2.len() as f64, sr)))
             .collect::<HashMap<_, _>>();
 
         //generate unique IDs for which a score exists
@@ -66,7 +65,7 @@ impl Fusion for RankedFusion {
             .iter()
             .map(|id| SearchResult {
                 chunk: id.clone(),
-                score: (rank(&r1_ranked, &id) + rank(&r2_ranked, &id))/2.0,
+                score: (rank(&r1_ranked, &id) + rank(&r2_ranked, &id)) / 2.0,
                 data: data(&r1_ranked, &r2_ranked, &id),
             })
             .collect::<Vec<_>>();
@@ -82,7 +81,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_ranked_fusion(){
+    fn test_ranked_fusion() {
         let mut r1 = vec![
             SearchResult {
                 chunk: 1,
@@ -144,13 +143,12 @@ mod tests {
         println!("{:?} r1", result);
         //println!("{:?} search result", result);
         assert_eq!(
-            result[0], SearchResult {
+            result[0],
+            SearchResult {
                 chunk: 4,
                 score: 0.9,
                 data: SearchResultData::Empty,
             }
         );
-        
-    }   
+    }
 }
- 
