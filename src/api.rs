@@ -3,12 +3,14 @@
 ///
 use std::collections::HashMap;
 
-use crate::dal::*;
+use crate::fusion::Fusion;
+use crate::{dal::*, fusion};
 use crate::index::{
     hora_vector_index::HoraVectorIndex, tantivy_text_index::TantivyTextIndex, Index, SearchError,
     SearchResult,
 };
 
+use arrow::array::timezone::Tz;
 use async_std::prelude::*;
 use async_std::task::{spawn, JoinHandle};
 use serde::{Deserialize, Serialize};
@@ -85,7 +87,7 @@ pub async fn hybrid_search(mut req: Request<State>) -> tide::Result<Body> {
 
     let text: JoinHandle<Result<Vec<SearchResult>, SearchError>> = spawn(async move {
         text_search.build()?;
-        let txt_result = text_search.search(request.query, chunk_num)?;
+        let mut txt_result = text_search.search(request.query, chunk_num)?;
         event!(Level::INFO, elapsed=?start.elapsed(), "text search completed");
         Ok(txt_result)
     });
@@ -103,29 +105,9 @@ pub async fn hybrid_search(mut req: Request<State>) -> tide::Result<Body> {
     let text_results = text_results?;
     let vector_results = vector_results?;
 
-    //todo is there a more optimal way of combinging results ? look at initial performance
-    let text_map = text_results
-        .iter()
-        .map(|sr| (sr.chunk, sr))
-        .collect::<HashMap<_, _>>();
 
-    //todo probably lots of cleanup here initial POC
-    //whats the best way to combine scores ??
-    //should individual scores also be returned ??
-    let response = vector_results
-        .into_iter()
-        .map(|sr| SearchResult {
-            chunk: sr.chunk,
-            score: sr.score
-                + text_map
-                    .get(&sr.chunk)
-                    .map(|sr| sr.score)
-                    .unwrap_or(0.0_f64),
-            // todo return text
-            data: sr.data,
-        })
-        .collect::<Vec<_>>();
-
+    let response = fusion::RankedFusion::merge(&mut txt_result, &mut vector_result);
+    
     event!(Level::INFO, elapsed=?start.elapsed(), "scores combined and returning");
     Body::from_json(&response)
 }
