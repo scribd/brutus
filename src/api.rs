@@ -1,4 +1,3 @@
-use crate::fusion::Fusion;
 use crate::index::{
     hora_vector_index::HoraVectorIndex, tantivy_text_index::TantivyTextIndex, Index, SearchError,
     SearchResult,
@@ -98,7 +97,7 @@ pub async fn hybrid_search(mut req: Request<State>) -> tide::Result<Body> {
     let mut text_results = text_results?;
     let mut vector_results = vector_results?;
 
-    let response = fusion::RankedFusion::merge(&mut text_results, &mut vector_results);
+    let response = fusion::ranked_fusion(&mut text_results, &mut vector_results);
 
     event!(Level::INFO, elapsed=?start.elapsed(), "scores combined and returning");
     Body::from_json(&response)
