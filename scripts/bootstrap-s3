@@ -1,6 +1,0 @@
-#!/bin/sh -xe
-
-S3_URL="s3://brutus-data"
-
-aws s3 mb ${S3_URL}
-aws s3 cp --recursive /build/tests/data ${S3_URL}

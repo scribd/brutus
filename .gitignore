@@ -1,2 +1,4 @@
 /target
 Cargo.lock
+infra/remote.tf
+.terraform

@@ -12,7 +12,6 @@ mod index;
 #[cfg(feature = "integration")]
 mod test_utils;
 
-//use core::slice::SlicePattern;
 #[async_std::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt()

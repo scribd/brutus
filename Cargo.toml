@@ -5,6 +5,7 @@ edition = "2021"
 homepage = "https://github.com/scribd/brutus"
 
 [dependencies]
+zstd-sys = "=2.0.9"
 arrow-array = "50.0.0"
 async-std = { version = "1.12.0", features = ["attributes", "tokio1"] }
 hora = "0.1.1"
