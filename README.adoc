@@ -10,10 +10,11 @@ endif::[]
 = Brutus
 
 An API for performing brute force vector search backed by pre-computed data in
-S3.
+S3. Optimised for a large number of small indexes
 
+== Why ?
 
-toc::[]
+Most existing vector search engines work by pre-indexing (compuationally expensive) data and storing these indexes in memory, this operation is optimised towards a small number of very large vector spaces. Brutus is different, it does no pre-indexing and generates all indexes at runtime. Thefore, Brutus is optimised to use cases when you have a very large number of small indexes. Pre-indexing is compuationally expensive but also only works well for large indexes. This precomuting redcues runtime complexity at the trade for indexing but this strategy only works well when there are a small number of vector spaces. When you have a large number of vector spaces you are better generating vectors at runtime
 
 
 == Development
