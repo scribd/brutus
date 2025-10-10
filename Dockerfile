@@ -12,7 +12,7 @@ COPY . .
 RUN cargo install --path .
 
 # Stage 2: Runtime environment
-FROM alpine:3.19.1
+FROM alpine:3.22.2
 
 # Create a new user "brutus" with no login capabilities for running the application
 RUN adduser -D -h /opt/brutus -s /sbin/nologin brutus
